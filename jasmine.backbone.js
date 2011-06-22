@@ -5,6 +5,10 @@
     return JSON.stringify(object)
   }
 
+  function msg(list) {
+    return list.length !== 0 ? list.join(';') : ''
+  }
+
   var ModelMatchers = {
 
     /**
@@ -29,22 +33,23 @@
     *     })
     */
     toHaveAttributes: function toHaveAttributes(attributes) {
-      this.message = function() {
-        var actual = json(this.actual)
-        var expected = json(attributes)
-        return [
-          "expected model: " + actual + " to have at least these attributes: " + expected,
-          "expected model: " + actual + " not to have any of the following attributes: " + expected
-        ]
-      }
-      for (var key in attributes) {
-        if (!hasMatchingAttribute(this.actual, key, attributes[key])) {
-          return false
+      var keys = []
+      var values = []
+      jasmine.getEnv().equals_(this.actual.attributes, attributes, keys, values)
+      var missing = []
+      for (var i = 0; i < keys.length; i++) {
+        var message = keys[i]
+        if (message.match(/but missing from/)) {
+          missing.push(keys[i])
         }
       }
-      function hasMatchingAttribute(object, key, value) {
-        return (key in object && object[key] === value)
+      this.message = function() {
+        return [
+          "model should have at least these attributes(" + json(attributes) + ") " + msg(keys) + " " + msg(values),
+          "model should have none of the following attributes(" + json(attributes) + ") " + msg(keys) + " " + msg(values)
+        ]
       }
+      return missing.length == 0  && values.length == 0
     },
 
     /**
@@ -60,13 +65,16 @@
     *     })
     */
     toHaveExactlyTheseAttributes: function toHaveExactlyTheseAttributes(attributes) {
+      var keys = []
+      var values = []
+      var equal = jasmine.getEnv().equals_(this.actual.attributes, attributes, keys, values)
       this.message = function() {
         return [
-          "model: " + actual + " does not have exactly these attributes: " + expected,
-          "model has exactly these attributes, but shouldn't :" +  expected
+          "model should match exact attributes, but does not. " + msg(keys) + " " + msg(values),
+          "model has exactly these attributes, but shouldn't :" +  json(attributes)
         ]
       }
-      return jasmine.Env.prototype.equal_(this.actual.attributes, attributes, {},{})
+      return equal
     }
   }
 
