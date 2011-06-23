@@ -45,7 +45,7 @@
       }
       this.message = function() {
         return [
-          "model should have at least these attributes(" + json(attributes) + ") " + msg(keys) + " " + msg(values),
+          "model should have at least these attributes(" + json(attributes) + ") " + msg(missing) + " " + msg(values),
           "model should have none of the following attributes(" + json(attributes) + ") " + msg(keys) + " " + msg(values)
         ]
       }
