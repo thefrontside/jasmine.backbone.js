@@ -9,6 +9,61 @@
     return list.length !== 0 ? list.join(';') : ''
   }
 
+  function eventBucket(model, eventName) {
+    var spiedEvents = model.spiedEvents
+    if (!spiedEvents) {
+      spiedEvents = model.spiedEvents = {}
+    }
+    var bucket = spiedEvents[eventName]
+    if (!bucket) {
+      bucket = spiedEvents[eventName] = []
+    }
+    return bucket
+  }
+
+  triggerSpy(Backbone.Model)
+  triggerSpy(Backbone.Collection)
+
+  function triggerSpy(constructor) {
+    var trigger = constructor.prototype.trigger
+    constructor.prototype.trigger = function(eventName) {
+      var bucket = eventBucket(this, eventName)
+      bucket.push(bucket.push(Array.prototype.slice.call(arguments, 1)))
+      return trigger.apply(this, arguments)
+    }
+  }
+
+  var EventMatchers = {
+
+    /**
+    * Expect this Model or Collection to have received the event
+    * specified by `eventName` at some point prior to now.
+    * If arguments are passed, then those arguments will be
+    * expected as well. Otherwise, it will merely check to see
+    * that the event has been called.
+    *
+    * @param [String] eventName the event type. eg 'save', 'error'
+    * @params *[Object] arguments the event arguments to be expected
+    */
+    toHaveTriggered: function toHaveTriggered(eventName) {
+      var bucket = eventBucket(this.actual, eventName)
+      var triggeredWith = Array.prototype.slice.call(arguments, 1)
+      this.message = function () {
+        return [
+          "expected model or collection to have received '" + eventName + "' with " + json(triggeredWith),
+          "expected model not to have received event '" + eventName + "', but it did"
+        ]
+      }
+      return _.detect(bucket, function(args) {
+        if (triggeredWith.length == 0) {
+          return true
+        } else {
+          return jasmine.getEnv().equals_(triggeredWith, args)
+        }
+      })
+    }
+  }
+
   var ModelMatchers = {
 
     /**
@@ -80,5 +135,6 @@
 
   beforeEach(function() {
     this.addMatchers(ModelMatchers)
+    this.addMatchers(EventMatchers)
   })
 })()
