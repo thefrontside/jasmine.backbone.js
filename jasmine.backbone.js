@@ -28,7 +28,7 @@
     var trigger = constructor.prototype.trigger
     constructor.prototype.trigger = function(eventName) {
       var bucket = eventBucket(this, eventName)
-      bucket.push(bucket.push(Array.prototype.slice.call(arguments, 1)))
+      bucket.push(Array.prototype.slice.call(arguments, 1))
       return trigger.apply(this, arguments)
     }
   }
